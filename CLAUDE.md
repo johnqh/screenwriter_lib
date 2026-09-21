@@ -26,6 +26,10 @@ tests/              stores + DevAuth (fake client), hooks (fake network), sessio
 - `bun install`; `bun run typecheck` (`bunx tsc --noEmit`); `bunx vitest run` (never `bun test`).
 - `tests/session.integration.test.ts` spawns `bun run src/index.ts` in `../screenwriter_api` on a random port (`AI_TEST_MODE=1`, `postgres://localhost:5432/screenwriter_test`; the API creates its tables at boot). Never use `screenwriter_dev`. Needs local Postgres.
 
+## AI flow
+
+`flows/ai.ts` `createAiFlow(client, documentId, {pollMs})` (also `Screenwriter.createAi(documentId)`; the react hook is `useAi(documentId)`): status, `startReview()`, `startPolish({sceneIds})`, polling of the current job, the last coverage report (read back from the document's recent jobs on `refresh()`), the pending suggestion set, `accept(ids)` / `acceptAll()` / `reject(ids?)`. A refused accept resolves as `{ok:false, reason:'stale', suggestionIds}` (not an error); `describeAiError(code)` gives plain-language text for `AI_OUTPUT_INVALID`, `AI_UNAVAILABLE`, `JOB_ALREADY_RUNNING`, `RATE_LIMITED`, `AI_KEY_NOT_PERMITTED` and others. Timers only, no browser APIs.
+
 ## Ports
 
 - `AuthPort`: `currentUser`, `signIn`, `signOut`, `getToken(forceRefresh)`, `onChange`. The app implements Firebase; `DevAuthPort` is for local dev (API must run with `AI_TEST_MODE=1`).
