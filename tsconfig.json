@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM"],
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "verbatimModuleSyntax": true,
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@sudobility/screenwriter_client": ["../screenwriter_client/src/index.ts"],
+      "@sudobility/screenwriter_types": ["../screenwriter_types/src/index.ts"],
+      "@sudobility/writing_core": ["../writing_core/src/index.ts"],
+      "yjs": ["../writing_core/node_modules/yjs/dist/yjs", "../writing_core/node_modules/yjs"],
+      "lib0": ["../writing_core/node_modules/lib0"],
+      "lib0/*": ["../writing_core/node_modules/lib0/*"]
+    }
+  },
+  "include": ["src", "tests", "vitest.config.ts"]
+}
