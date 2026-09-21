@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore } from "react";
 import { useStore } from "zustand";
 import type { BatchResult, CommandInvocation, DocumentModel } from "@sudobility/writing_core";
 import type { ProjectCreateRequest } from "@sudobility/screenwriter_types";
 import type { ExportFormatId, FormatInfo } from "@sudobility/screenwriter_types";
+import type { AiFlow, AiState } from "../flows/ai";
 import type { ExportOutcome, ImportOutcome, ImportScriptInput } from "../flows/import-export";
 import type { DocumentSession, ExecuteOptions, RemoteCursor, SessionSyncStatus } from "../session/types";
 import type { DocumentsState } from "../stores/documents-store";
@@ -203,4 +204,41 @@ export function useImportExport(): UseImportExport {
     [importExport]
   );
   return { formats, importing, exporting, error, importScript, exportDocument, clearError: () => setError(null) };
+}
+
+export interface UseAi extends AiState {
+  startReview: AiFlow["startReview"];
+  startPolish: AiFlow["startPolish"];
+  cancel: AiFlow["cancel"];
+  accept: AiFlow["accept"];
+  acceptAll: AiFlow["acceptAll"];
+  reject: AiFlow["reject"];
+  clearError: AiFlow["clearError"];
+  refresh: AiFlow["refresh"];
+  /** A job is queued or running. */
+  busy: boolean;
+}
+
+/** AI review and polish for a document: status, the current job, its report or suggestion set, accept/reject. */
+export function useAi(documentId: string): UseAi {
+  const sw = useScreenwriter();
+  const flow = useMemo(() => sw.createAi(documentId), [sw, documentId]);
+  useEffect(() => {
+    void flow.refresh();
+    return () => flow.dispose();
+  }, [flow]);
+  const f = flow;
+  const state = useSyncExternalStore(f.subscribe, f.getState, f.getState);
+  return {
+    ...state,
+    startReview: f.startReview,
+    startPolish: f.startPolish,
+    cancel: f.cancel,
+    accept: f.accept,
+    acceptAll: f.acceptAll,
+    reject: f.reject,
+    clearError: f.clearError,
+    refresh: f.refresh,
+    busy: state.starting || state.job?.status === "queued" || state.job?.status === "running",
+  };
 }

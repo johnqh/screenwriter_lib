@@ -8,5 +8,6 @@ export * from "./auth/dev-auth";
 export * from "./stores";
 export * from "./session";
 export * from "./flows/import-export";
+export * from "./flows/ai";
 export * from "./screenwriter";
 export * from "./react";

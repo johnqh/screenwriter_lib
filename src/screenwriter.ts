@@ -13,6 +13,7 @@ import { createProjectsStore, type ProjectsStore } from "./stores/projects-store
 import { createTemplatesStore, type TemplatesStore } from "./stores/templates-store";
 import { colorForUid, openDocumentSession, type OpenSessionOptions } from "./session/document-session";
 import { createImportExportFlow, type ImportExportFlow } from "./flows/import-export";
+import { createAiFlow, type AiFlow, type AiFlowOptions } from "./flows/ai";
 import type { DocumentSession } from "./session/types";
 
 export interface ScreenwriterConfig {
@@ -35,6 +36,8 @@ export interface Screenwriter {
   readonly offline: OfflineDocStore;
   /** Import a script into a project, export a document (bytes in, bytes out). */
   readonly importExport: ImportExportFlow;
+  /** A review-and-polish flow for one document. The caller owns it: `dispose()` when done. */
+  createAi(documentId: string, options?: AiFlowOptions): AiFlow;
   readonly stores: {
     auth: AuthStore;
     projects: ProjectsStore;
@@ -102,6 +105,7 @@ export function createScreenwriter(config: ScreenwriterConfig): Screenwriter {
     importExport,
     auth,
     offline,
+    createAi: (documentId, options) => createAiFlow(client, documentId, options),
     stores: { auth: authStore.store, projects, documents, templates },
 
     openDocumentSession(documentId, options) {
