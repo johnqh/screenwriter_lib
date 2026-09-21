@@ -14,6 +14,7 @@ import { createTemplatesStore, type TemplatesStore } from "./stores/templates-st
 import { colorForUid, openDocumentSession, type OpenSessionOptions } from "./session/document-session";
 import { createImportExportFlow, type ImportExportFlow } from "./flows/import-export";
 import { createAiFlow, type AiFlow, type AiFlowOptions } from "./flows/ai";
+import { createApiKeysFlow, type ApiKeysFlow } from "./flows/api-keys";
 import type { DocumentSession } from "./session/types";
 
 export interface ScreenwriterConfig {
@@ -38,6 +39,8 @@ export interface Screenwriter {
   readonly importExport: ImportExportFlow;
   /** A review-and-polish flow for one document. The caller owns it: `dispose()` when done. */
   createAi(documentId: string, options?: AiFlowOptions): AiFlow;
+  /** Personal API keys for the signed-in user's personal workspace. The caller owns it: `dispose()` when done. */
+  createApiKeys(): ApiKeysFlow;
   readonly stores: {
     auth: AuthStore;
     projects: ProjectsStore;
@@ -106,6 +109,7 @@ export function createScreenwriter(config: ScreenwriterConfig): Screenwriter {
     auth,
     offline,
     createAi: (documentId, options) => createAiFlow(client, documentId, options),
+    createApiKeys: () => createApiKeysFlow(client, getWorkspaceId),
     stores: { auth: authStore.store, projects, documents, templates },
 
     openDocumentSession(documentId, options) {

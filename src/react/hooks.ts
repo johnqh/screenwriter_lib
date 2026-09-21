@@ -4,6 +4,7 @@ import type { BatchResult, CommandInvocation, DocumentModel } from "@sudobility/
 import type { ProjectCreateRequest } from "@sudobility/screenwriter_types";
 import type { ExportFormatId, FormatInfo } from "@sudobility/screenwriter_types";
 import type { AiFlow, AiState } from "../flows/ai";
+import type { ApiKeysState } from "../flows/api-keys";
 import type { ExportOutcome, ImportOutcome, ImportScriptInput } from "../flows/import-export";
 import type { DocumentSession, ExecuteOptions, RemoteCursor, SessionSyncStatus } from "../session/types";
 import type { DocumentsState } from "../stores/documents-store";
@@ -241,4 +242,24 @@ export function useAi(documentId: string): UseAi {
     refresh: f.refresh,
     busy: state.starting || state.job?.status === "queued" || state.job?.status === "running",
   };
+}
+
+export interface UseApiKeys extends ApiKeysState {
+  create: (input: Parameters<import("../flows/api-keys").ApiKeysFlow["create"]>[0]) => Promise<boolean>;
+  dismissReveal: () => void;
+  revoke: (id: string) => Promise<boolean>;
+  clearError: () => void;
+  refresh: () => Promise<void>;
+}
+
+/** Personal API keys: the list, create (with a transient one-time `revealed` secret) and revoke. */
+export function useApiKeys(): UseApiKeys {
+  const sw = useScreenwriter();
+  const flow = useMemo(() => sw.createApiKeys(), [sw]);
+  useEffect(() => {
+    void flow.refresh();
+    return () => flow.dispose();
+  }, [flow]);
+  const state = useSyncExternalStore(flow.subscribe, flow.getState, flow.getState);
+  return { ...state, create: flow.create, dismissReveal: flow.dismissReveal, revoke: flow.revoke, clearError: flow.clearError, refresh: flow.refresh };
 }
