@@ -1,4 +1,4 @@
-import type { Actor } from "@sudobility/writing_core";
+import { cryptoIdSource, newId, type Actor } from "@sudobility/writing_core";
 import {
   ScreenwriterClient,
   SyncClient,
@@ -12,6 +12,7 @@ import { createDocumentsStore, type DocumentsStore } from "./stores/documents-st
 import { createProjectsStore, type ProjectsStore } from "./stores/projects-store";
 import { createTemplatesStore, type TemplatesStore } from "./stores/templates-store";
 import { colorForUid, openDocumentSession, type OpenSessionOptions } from "./session/document-session";
+import { createImportExportFlow, type ImportExportFlow } from "./flows/import-export";
 import type { DocumentSession } from "./session/types";
 
 export interface ScreenwriterConfig {
@@ -32,6 +33,8 @@ export interface Screenwriter {
   readonly sync: SyncClient;
   readonly auth: AuthPort;
   readonly offline: OfflineDocStore;
+  /** Import a script into a project, export a document (bytes in, bytes out). */
+  readonly importExport: ImportExportFlow;
   readonly stores: {
     auth: AuthStore;
     projects: ProjectsStore;
@@ -83,9 +86,20 @@ export function createScreenwriter(config: ScreenwriterConfig): Screenwriter {
   const open = new Map<string, { promise: Promise<DocumentSession>; refs: number }>();
   const closing = new Map<string, Promise<void>>();
 
+  const importExport = createImportExportFlow(client, {
+    newDocumentId: () => newId("doc", cryptoIdSource),
+    onImported: (pid, doc) => documents.getState().upsert(pid, doc),
+    // exporting reads the server's copy: let this device's open session push its edits first
+    beforeExport: async id => {
+      const entry = open.get(id);
+      if (entry) await (await entry.promise).settle();
+    },
+  });
+
   return {
     client,
     sync,
+    importExport,
     auth,
     offline,
     stores: { auth: authStore.store, projects, documents, templates },

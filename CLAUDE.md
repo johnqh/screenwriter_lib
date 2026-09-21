@@ -16,6 +16,7 @@ src/
   stores/           vanilla zustand stores made by factories over a (fakeable) client: auth, projects, documents, templates
   session/          DocumentSession: types.ts (public API), document-session.ts (the core), emitter.ts
   screenwriter.ts   createScreenwriter({network, baseUrl, auth, offline, sync?, session?}): wires client + SyncClient + stores + session factory
+  flows/import-export.ts  createImportExportFlow: importScript(projectId,{filename,bytes}) / exportDocument(id, format) (bytes in, bytes out; export first waits for the open session to settle); on `Screenwriter.importExport`
   react/            ScreenwriterProvider, useScreenwriter, useAuth/useProjects/useDocuments/useTemplates/useDocumentSession (thin)
 tests/              stores + DevAuth (fake client), hooks (fake network), session.integration (spawns the REAL API)
 ```
@@ -28,6 +29,7 @@ tests/              stores + DevAuth (fake client), hooks (fake network), sessio
 ## Ports
 
 - `AuthPort`: `currentUser`, `signIn`, `signOut`, `getToken(forceRefresh)`, `onChange`. The app implements Firebase; `DevAuthPort` is for local dev (API must run with `AI_TEST_MODE=1`).
+- `useImportExport()` (react): `{formats, importing, exporting, error, importScript, exportDocument}`; failures resolve `null` and set `error` (an `ApiError` with `code`/`details`). No `File`/`Blob` in the lib: the app reads the file and does the download.
 - `OfflineDocStore`: `load/save/delete` of `{epoch, state (Yjs V2)}` per document id. The IndexedDB adapter is the app's job.
 - `createScreenwriter` builds the `ScreenwriterClient` and one `SyncClient` (per instance = per device). `openDocumentSession` on it is reference counted: one live session per document, real close when every holder has called `close()` once.
 

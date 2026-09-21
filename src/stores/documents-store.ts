@@ -16,6 +16,8 @@ export interface DocumentsState {
   load(projectId: string, opts?: { trashed?: boolean }): Promise<void>;
   /** Creates from a template (`templateId`); the id is generated here so a retry is idempotent. */
   create(projectId: string, input: { title: string; kind?: DocumentKind; templateId?: string; language?: string }): Promise<DocumentMeta | null>;
+  /** Add or replace a document made elsewhere (an import) in the project's list. */
+  upsert(projectId: string, document: DocumentMeta): void;
   trash(projectId: string, documentId: string): Promise<void>;
   restore(projectId: string, documentId: string): Promise<void>;
   reset(): void;
@@ -62,6 +64,10 @@ export function createDocumentsStore(client: DocumentsClient): DocumentsStore {
           if (!cur(pid).showingTrash) patch(pid, { items: [...cur(pid).items, created] });
         });
         return created;
+      },
+      upsert(pid, doc) {
+        if (cur(pid).showingTrash) return;
+        patch(pid, { items: [...cur(pid).items.filter(d => d.id !== doc.id), doc] });
       },
       trash: (pid, did) =>
         run(pid, async () => {

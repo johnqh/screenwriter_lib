@@ -2,6 +2,8 @@ import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { useStore } from "zustand";
 import type { BatchResult, CommandInvocation, DocumentModel } from "@sudobility/writing_core";
 import type { ProjectCreateRequest } from "@sudobility/screenwriter_types";
+import type { ExportFormatId, FormatInfo } from "@sudobility/screenwriter_types";
+import type { ExportOutcome, ImportOutcome, ImportScriptInput } from "../flows/import-export";
 import type { DocumentSession, ExecuteOptions, RemoteCursor, SessionSyncStatus } from "../session/types";
 import type { DocumentsState } from "../stores/documents-store";
 import { useScreenwriter } from "./context";
@@ -137,4 +139,68 @@ export function useDocumentSession(documentId: string | null | undefined): UseDo
     canRedo: session?.canRedo() ?? false,
     setLocalCursor,
   };
+}
+
+export interface UseImportExport {
+  /** Formats the server supports (empty until loaded). */
+  formats: FormatInfo[];
+  importing: boolean;
+  exporting: boolean;
+  /** The last failure (an `ApiError` from the client library has `code` and `details`); cleared by the next call. */
+  error: Error | null;
+  importScript(projectId: string, input: ImportScriptInput): Promise<ImportOutcome | null>;
+  exportDocument(documentId: string, format: ExportFormatId): Promise<ExportOutcome | null>;
+  clearError(): void;
+}
+
+/** Import and export with loading/error state. Both resolve to `null` on failure (see `error`). */
+export function useImportExport(): UseImportExport {
+  const { importExport } = useScreenwriter();
+  const [formats, setFormats] = useState<FormatInfo[]>([]);
+  const [importing, setImporting] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    importExport.formats().then(
+      f => !cancelled && setFormats(f),
+      () => undefined
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [importExport]);
+
+  const importScript = useCallback(
+    async (projectId: string, input: ImportScriptInput) => {
+      setImporting(true);
+      setError(null);
+      try {
+        return await importExport.importScript(projectId, input);
+      } catch (e) {
+        setError(e instanceof Error ? e : new Error(String(e)));
+        return null;
+      } finally {
+        setImporting(false);
+      }
+    },
+    [importExport]
+  );
+  const exportDocument = useCallback(
+    async (documentId: string, format: ExportFormatId) => {
+      setExporting(true);
+      setError(null);
+      try {
+        return await importExport.exportDocument(documentId, format);
+      } catch (e) {
+        setError(e instanceof Error ? e : new Error(String(e)));
+        return null;
+      } finally {
+        setExporting(false);
+      }
+    },
+    [importExport]
+  );
+  return { formats, importing, exporting, error, importScript, exportDocument, clearError: () => setError(null) };
 }

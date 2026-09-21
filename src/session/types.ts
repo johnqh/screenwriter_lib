@@ -95,6 +95,9 @@ export interface DocumentSession {
   listVersions(): Promise<Paginated<VersionListItem>>;
   restoreVersion(versionId: string): Promise<VersionRestoreResponse>;
 
+  /** Resolves true once this session is synced and every local edit is acknowledged (false on timeout). */
+  settle(timeoutMs?: number): Promise<boolean>;
+
   /** Persist to the offline store now. */
   flush(): Promise<void>;
   close(): Promise<void>;

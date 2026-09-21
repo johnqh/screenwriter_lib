@@ -444,6 +444,7 @@ export async function openDocumentSession(
       return res;
     },
 
+    settle: (ms = 3000) => waitUntil(settled, ms),
     flush,
     async close() {
       if (phase === "closed") return;
