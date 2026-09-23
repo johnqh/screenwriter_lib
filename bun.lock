@@ -5,7 +5,7 @@
     "": {
       "name": "@sudobility/screenwriter_lib",
       "dependencies": {
-        "@sudobility/screenwriter_client": "^0.1.3",
+        "@sudobility/screenwriter_client": "^0.1.4",
         "@sudobility/screenwriter_types": "^0.1.2",
         "@sudobility/writing_core": "^0.1.2",
         "yjs": "^13.6.32",
@@ -226,7 +226,7 @@
 
     "@standard-schema/spec": ["@standard-schema/spec@1.1.0", "", {}, "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w=="],
 
-    "@sudobility/screenwriter_client": ["@sudobility/screenwriter_client@0.1.3", "", { "dependencies": { "@sudobility/screenwriter_types": "^0.1.2", "@sudobility/writing_core": "^0.1.2", "yjs": "^13.6.32" }, "peerDependencies": { "@tanstack/react-query": ">=5.0.0", "react": ">=18.0.0" } }, "sha512-wlJLm31dZt1yUj3Cr3DpLBuYQg35KG7uExp6iTfVJvWbzuAGZuSV5HMQMg2gg6pByzFV9wkZp+LHBtUVvyia/A=="],
+    "@sudobility/screenwriter_client": ["@sudobility/screenwriter_client@0.1.4", "", { "dependencies": { "@sudobility/screenwriter_types": "^0.1.2", "@sudobility/writing_core": "^0.1.2", "yjs": "^13.6.32" }, "peerDependencies": { "@tanstack/react-query": ">=5.0.0", "react": ">=18.0.0" } }, "sha512-Gq7izwJbenM8ri6cIQYVnMcWzZfA3WCeBOFmaTSn4EdlYEL13vRcDZLGG+4AMnNGuZbhdu86voKSKwfWz77Bgg=="],
 
     "@sudobility/screenwriter_types": ["@sudobility/screenwriter_types@0.1.2", "", { "dependencies": { "@sudobility/types": "^1.9.67", "@sudobility/writing_core": "^0.1.2", "lib0": "0.2.117", "zod": "^4.6.5" } }, "sha512-VrcvIeDCvN+WT6F7Ok4NZVHxMzX/ilmLHgJfaussFMJc04ixt4Ka3lgZvZ9nc4iXcxeeP2ROzRvKbdbqgngWOA=="],
 

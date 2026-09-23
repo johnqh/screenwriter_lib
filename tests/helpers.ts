@@ -16,7 +16,7 @@ export async function startApi(): Promise<void> {
       ...process.env,
       PORT: String(PORT),
       DATABASE_URL: "postgres://localhost:5432/screenwriter_test",
-      PUBLIC_APP_URL: "http://localhost:5173",
+      PUBLIC_APP_URL: "http://localhost:5143",
       AI_TEST_MODE: "1",
       LOG_LEVEL: "error",
     },

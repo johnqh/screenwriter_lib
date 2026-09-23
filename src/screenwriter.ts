@@ -20,7 +20,7 @@ import type { DocumentSession } from "./session/types";
 export interface ScreenwriterConfig {
   /** The only door to the network (REST). */
   network: NetworkClient;
-  /** API origin, e.g. `http://localhost:8042`. */
+  /** API origin, e.g. `http://localhost:8036`. */
   baseUrl: string;
   auth: AuthPort;
   offline: OfflineDocStore;

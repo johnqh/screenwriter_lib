@@ -10,7 +10,7 @@ import { createScreenwriter, DevAuthPort, InMemoryOfflineDocStore, ScreenwriterP
 
 const sw = createScreenwriter({
   network: createFetchNetworkClient(),
-  baseUrl: "http://localhost:8042",
+  baseUrl: "http://localhost:8036",
   auth: new DevAuthPort(),              // dev token dev:<uid>:<email>; needs the API with AI_TEST_MODE=1
   offline: new InMemoryOfflineDocStore(), // the app supplies an IndexedDB adapter
 });
