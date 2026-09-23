@@ -8,6 +8,7 @@ import type { ApiKeysState } from "../flows/api-keys";
 import type { ExportOutcome, ImportOutcome, ImportScriptInput } from "../flows/import-export";
 import type { DocumentSession, ExecuteOptions, RemoteCursor, SessionSyncStatus } from "../session/types";
 import type { DocumentsState } from "../stores/documents-store";
+import { templatesFilterKey } from "../stores/templates-store";
 import { useScreenwriter } from "./context";
 
 export function useAuth() {
@@ -57,13 +58,23 @@ export function useDocuments(projectId: string | null | undefined) {
   };
 }
 
-export function useTemplates() {
+/**
+ * Templates of the personal workspace, plus built-ins. `locale` (typically the app's current UI language) narrows
+ * built-ins to that BCP-47 language — screenwriter_lib doesn't know the app's language itself, so this is the
+ * app's own seam for supplying it (`user`/`workspace` templates are never filtered by it, see `TemplateSummary`).
+ * Loads once per `(category, locale)` pair actually asked for; a caller switching `locale` re-fetches instead of
+ * reusing a stale list loaded under a different one.
+ */
+export function useTemplates(locale?: string) {
   const { stores } = useScreenwriter();
   const s = useStore(stores.templates);
   const uid = useStore(stores.auth, a => a.user?.uid ?? null);
   useEffect(() => {
-    if (uid && !stores.templates.getState().loaded) void stores.templates.getState().load();
-  }, [uid, stores]);
+    if (!uid) return;
+    const state = stores.templates.getState();
+    if (state.loadedFor === templatesFilterKey(undefined, locale)) return;
+    void state.load(undefined, locale);
+  }, [uid, locale, stores]);
   return { templates: s.items, loading: s.loading, error: s.error, load: s.load };
 }
 
