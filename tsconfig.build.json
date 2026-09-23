@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "declaration": true,
+    "declarationDir": "./dist",
+    "outDir": "./dist",
+    // Force `@sudobility/screenwriter_client`/`@sudobility/screenwriter_types`/
+    // `@sudobility/writing_core`/`yjs` to resolve through their real, compiled npm dependencies
+    // (node_modules) rather than the base tsconfig's own `paths` (local sibling raw source, kept
+    // there for fast local dev/typecheck): declaring against raw source here would pull each one's
+    // own dependency graph into this package's own declaration output.
+    "paths": {}
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.tsx"]
+}

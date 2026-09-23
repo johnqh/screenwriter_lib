@@ -1,25 +1,18 @@
 import { defineConfig } from "vitest/config";
-import { fileURLToPath } from "node:url";
+import { sharedAlias } from "./vitest.shared";
 
-const p = (rel: string) => fileURLToPath(new URL(rel, import.meta.url));
-
+/**
+ * `test:unit` (what CI/CD runs): hermetic tests only — no DB, no spawned server, no live network
+ * endpoint. `*.integration.test.ts` (`bun run test:integration`) spawn the real `screenwriter_api`
+ * and a real Postgres `screenwriter_test` database; they are LOCAL-DEV-ONLY (need the sibling
+ * `screenwriter_api` repo checked out and Postgres running) and must never run here.
+ */
 export default defineConfig({
-  // Vitest does not read tsconfig `paths`; mirror them here (keep in sync with tsconfig.json).
-  // yjs/lib0 MUST point at writing_core's copy: one Yjs instance at runtime.
-  resolve: {
-    alias: [
-      { find: /^@sudobility\/screenwriter_client$/, replacement: p("../screenwriter_client/src/index.ts") },
-      { find: /^@sudobility\/screenwriter_types$/, replacement: p("../screenwriter_types/src/index.ts") },
-      { find: /^@sudobility\/writing_core$/, replacement: p("../writing_core/src/index.ts") },
-      { find: /^yjs$/, replacement: p("../writing_core/node_modules/yjs/dist/yjs.mjs") },
-      { find: /^lib0\/(.*)$/, replacement: p("../writing_core/node_modules/lib0/") + "$1" },
-    ],
-  },
+  resolve: { alias: sharedAlias },
   test: {
-    environment: "node",
-    fileParallelism: false, // integration tests share one spawned API and test DB
+    environment: "node", // hooks.test.tsx overrides per-file with `// @vitest-environment happy-dom`
     testTimeout: 30_000,
-    hookTimeout: 60_000,
     include: ["tests/**/*.test.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+    exclude: ["**/node_modules/**", "**/dist/**", "**/*.integration.test.ts"],
   },
 });
