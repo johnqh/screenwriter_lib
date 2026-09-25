@@ -1,6 +1,6 @@
 # screenwriter_lib
 
-Frontend business-logic library for Fadewright. Slice F2 of `../screenwriter_plans/plans/2026-09-20-frontend-mvp.md`. Sits between `screenwriter_client` (network, sync socket) and the UI. **No UI code.** Local package: no publishing, no versions, no CI workflow; consumers import it by path (`tsconfig` `paths` + Vite alias to `../screenwriter_lib/src/index.ts`).
+Frontend business-logic library for ViaInk. Slice F2 of `../screenwriter_plans/plans/2026-09-20-frontend-mvp.md`. Sits between `screenwriter_client` (network, sync socket) and the UI. **No UI code.** Local package: no publishing, no versions, no CI workflow; consumers import it by path (`tsconfig` `paths` + Vite alias to `../screenwriter_lib/src/index.ts`).
 
 ## Tech stack
 

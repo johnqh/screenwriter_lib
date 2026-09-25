@@ -1,6 +1,6 @@
 # @sudobility/screenwriter_lib
 
-Business logic for the Fadewright screenwriting app: ports (auth, offline store), zustand stores, a `DocumentSession` (writing_core model, per-user undo, presence, offline persistence, epoch rebase, snapshot flows) and thin React hooks. No UI. Local package (not published); import it by path.
+Business logic for the ViaInk screenwriting app: ports (auth, offline store), zustand stores, a `DocumentSession` (writing_core model, per-user undo, presence, offline persistence, epoch rebase, snapshot flows) and thin React hooks. No UI. Local package (not published); import it by path.
 
 ## Usage
 

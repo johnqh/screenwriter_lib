@@ -5,8 +5,8 @@
     "": {
       "name": "@sudobility/screenwriter_lib",
       "dependencies": {
-        "@sudobility/screenwriter_client": "^0.1.6",
-        "@sudobility/screenwriter_types": "^0.1.4",
+        "@sudobility/screenwriter_client": "^0.1.7",
+        "@sudobility/screenwriter_types": "^0.1.5",
         "@sudobility/writing_core": "^0.1.2",
         "yjs": "^13.6.32",
       },
@@ -226,9 +226,9 @@
 
     "@standard-schema/spec": ["@standard-schema/spec@1.1.0", "", {}, "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w=="],
 
-    "@sudobility/screenwriter_client": ["@sudobility/screenwriter_client@0.1.6", "", { "dependencies": { "@sudobility/screenwriter_types": "^0.1.4", "@sudobility/writing_core": "^0.1.2", "yjs": "^13.6.32" }, "peerDependencies": { "@tanstack/react-query": ">=5.0.0", "react": ">=18.0.0" } }, "sha512-gDJBgasPh9fAUlm/mo61ub7KnH3y/iRq/rsPkI4/Fd4hDvCVWQOqEXuL0U3r7Jk2JgKW4Re7vK/hIDtUqfOq2g=="],
+    "@sudobility/screenwriter_client": ["@sudobility/screenwriter_client@0.1.7", "", { "dependencies": { "@sudobility/screenwriter_types": "^0.1.5", "@sudobility/writing_core": "^0.1.2", "yjs": "^13.6.32" }, "peerDependencies": { "@tanstack/react-query": ">=5.0.0", "react": ">=18.0.0" } }, "sha512-fO5yRoy2+bdpwSdpy+5rcJvjfMZTmPTmBJtp9S+JHlUa1RaioBhZo3yBHD4qWxangarC/3LMIUFtX6BRqJfUAg=="],
 
-    "@sudobility/screenwriter_types": ["@sudobility/screenwriter_types@0.1.4", "", { "dependencies": { "@sudobility/types": "^1.9.67", "@sudobility/writing_core": "^0.1.2", "lib0": "0.2.117", "zod": "^4.6.5" } }, "sha512-167+rh1qf+/LP9TBqUew4LL+MD2xYFjrkRZrhAQwgCqD221AlqXMIWyj3IoXRJzbLAW3KcD33BhtIJgpCDl1fA=="],
+    "@sudobility/screenwriter_types": ["@sudobility/screenwriter_types@0.1.5", "", { "dependencies": { "@sudobility/types": "^1.9.67", "@sudobility/writing_core": "^0.1.2", "lib0": "0.2.117", "zod": "^4.6.5" } }, "sha512-wCfiBVewpZ9BG8ADaXmzhRtW/jnDrup9cunH8/BkO3EH0sMzv9V5X4+diShNoYZFDVXFAD80ZPfIEM+ASH1nQQ=="],
 
     "@sudobility/types": ["@sudobility/types@1.9.67", "", {}, "sha512-d+jk4L9i8VNvOnCJW/craqiiUTPH5aRq4KYe/QBrBU3mCcTfoYjgzzXopVQRcthiZ5dwQAEpdqCTQ0gAWRN6Ww=="],
 
