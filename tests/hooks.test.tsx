@@ -13,8 +13,8 @@ const ok = (data: unknown) => ({
 
 const network: NetworkClient = {
   async request(req) {
-    if (req.url.endsWith("/me")) return ok({ userId: "u", email: "a@b.co", personalWorkspaceId: "w1" });
-    if (req.url.includes("/workspaces/w1/projects")) return ok({ items: [{ id: "prj_1", name: "One" }], nextCursor: null });
+    if (req.url.endsWith("/me")) return ok({ userId: "u", email: "a@b.co", personalEntityId: "w1" });
+    if (req.url.includes("/entities/w1/projects")) return ok({ items: [{ id: "prj_1", name: "One" }], nextCursor: null });
     return { status: 404, headers: {}, body: new TextEncoder().encode("{}") };
   },
 };
@@ -29,7 +29,7 @@ describe("react hooks (fake network)", () => {
       await result.current.auth.signIn("a@b.co");
     });
     await waitFor(() => expect(result.current.projects.projects.map(p => p.id)).toEqual(["prj_1"]));
-    expect(result.current.auth.me?.personalWorkspaceId).toBe("w1");
+    expect(result.current.auth.me?.personalEntityId).toBe("w1");
     sw.dispose();
   });
 });

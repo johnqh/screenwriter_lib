@@ -5,8 +5,8 @@
     "": {
       "name": "@sudobility/screenwriter_lib",
       "dependencies": {
-        "@sudobility/screenwriter_client": "^0.1.9",
-        "@sudobility/screenwriter_types": "^0.1.7",
+        "@sudobility/screenwriter_client": "^0.1.10",
+        "@sudobility/screenwriter_types": "^0.1.8",
         "@sudobility/writing_core": "^0.1.2",
         "yjs": "^13.6.32",
       },
@@ -226,9 +226,9 @@
 
     "@standard-schema/spec": ["@standard-schema/spec@1.1.0", "", {}, "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w=="],
 
-    "@sudobility/screenwriter_client": ["@sudobility/screenwriter_client@0.1.9", "", { "dependencies": { "@sudobility/screenwriter_types": "^0.1.7", "@sudobility/writing_core": "^0.1.2", "yjs": "^13.6.32" }, "peerDependencies": { "@tanstack/react-query": ">=5.0.0", "react": ">=18.0.0" } }, "sha512-3PFxIsf+GNvuO93lAzeFgsewC1rURUbfoVRmTXFdsLV0TtHhm5JozJ8Dy+tzZtiBYZu0fm4eKNWEauPwHXOgeA=="],
+    "@sudobility/screenwriter_client": ["@sudobility/screenwriter_client@0.1.10", "", { "dependencies": { "@sudobility/screenwriter_types": "^0.1.8", "@sudobility/writing_core": "^0.1.2", "yjs": "^13.6.32" }, "peerDependencies": { "@tanstack/react-query": ">=5.0.0", "react": ">=18.0.0" } }, "sha512-vnIcgA5DXWCvdTTZBrgl1a0+WSpUoGB0GALweQGozx1G1KMEEBgjIv/kU1MmJDng+dSFxyTMfZ5fyWM8Ysk0cw=="],
 
-    "@sudobility/screenwriter_types": ["@sudobility/screenwriter_types@0.1.7", "", { "dependencies": { "@sudobility/types": "^1.9.68", "@sudobility/writing_core": "^0.1.2", "lib0": "0.2.117", "zod": "^4.6.5" } }, "sha512-k1u+6SQ1hzLuciugu+OKz4aWAVs8+88ol5anSHjDPSqvx1mY2O17NdACayUshXGayIPr7Yfi0mq34lk4aSQIyQ=="],
+    "@sudobility/screenwriter_types": ["@sudobility/screenwriter_types@0.1.8", "", { "dependencies": { "@sudobility/types": "^1.9.68", "@sudobility/writing_core": "^0.1.2", "lib0": "0.2.117", "zod": "^4.6.5" } }, "sha512-WicphuJ8mWyuZo5hY46P5Gq+sS8BbUUB6JXhHoaRU6FtKR+sD+TPbvWEME6mqO0hjxI3CWgUFTHV1H73WGcZCA=="],
 
     "@sudobility/types": ["@sudobility/types@1.9.68", "", {}, "sha512-4LL5+UfcqQcc0PKKR/z/PqS6j9DQPVkkjL+3oOW+Bwx0TAu1SVKAlPhlt/9ruNMW+abcHuZoFvbOVD5gdYBSGw=="],
 

@@ -45,12 +45,12 @@ describe("InMemoryOfflineDocStore", () => {
 describe("stores over a fake client", () => {
   it("auth store follows the port and loads me", async () => {
     const auth = new DevAuthPort();
-    const client = { me: vi.fn(async () => ({ userId: "u", personalWorkspaceId: "w1" }) as never) };
+    const client = { me: vi.fn(async () => ({ userId: "u", personalEntityId: "w1" }) as never) };
     const { store, dispose } = createAuthStore(auth, client);
     expect(store.getState().status).toBe("signedOut");
     await store.getState().signIn("a@b.co");
     expect(store.getState().status).toBe("signedIn");
-    await vi.waitFor(() => expect(store.getState().me?.personalWorkspaceId).toBe("w1"));
+    await vi.waitFor(() => expect(store.getState().me?.personalEntityId).toBe("w1"));
     await store.getState().signOut();
     expect(store.getState()).toMatchObject({ status: "signedOut", me: null });
     dispose();

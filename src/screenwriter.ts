@@ -44,8 +44,8 @@ export interface ScreenwriterConfig {
   sync?: Partial<Omit<SyncClientOptions, "url" | "getToken">>;
   /** Defaults for `openDocumentSession`. */
   session?: OpenSessionOptions;
-  /** Current selected workspace id for app project CRUD; omitted by integrations that remain personal-only. */
-  getSelectedWorkspaceId?: () => string | null;
+  /** Current selected entity id for app project CRUD; omitted by integrations that remain personal-only. */
+  getSelectedEntityId?: () => string | null;
 }
 
 export interface Screenwriter {
@@ -57,7 +57,7 @@ export interface Screenwriter {
   readonly importExport: ImportExportFlow;
   /** A review-and-polish flow for one document. The caller owns it: `dispose()` when done. */
   createAi(documentId: string, options?: AiFlowOptions): AiFlow;
-  /** Personal API keys for the signed-in user's personal workspace. The caller owns it: `dispose()` when done. */
+  /** Personal API keys for the signed-in user's personal entity. The caller owns it: `dispose()` when done. */
   createApiKeys(): ApiKeysFlow;
   readonly stores: {
     auth: AuthStore;
@@ -84,7 +84,7 @@ export function createScreenwriter(config: ScreenwriterConfig): Screenwriter {
     network,
     baseUrl,
     getToken: (f) => auth.getToken(f),
-    getSelectedWorkspaceId: config.getSelectedWorkspaceId,
+    getSelectedEntityId: config.getSelectedEntityId,
   });
   const sync = new SyncClient({
     ...config.sync,
@@ -93,13 +93,13 @@ export function createScreenwriter(config: ScreenwriterConfig): Screenwriter {
   });
 
   const authStore = createAuthStore(auth, client);
-  const getPersonalWorkspaceId = async () => {
+  const getPersonalEntityId = async () => {
     const me = authStore.store.getState().me ?? (await client.me());
-    return me.personalWorkspaceId;
+    return me.personalEntityId;
   };
-  const getProjectWorkspaceId = async () =>
-    config.getSelectedWorkspaceId?.() ?? (await getPersonalWorkspaceId());
-  const projects = createProjectsStore(client, getProjectWorkspaceId);
+  const getProjectEntityId = async () =>
+    config.getSelectedEntityId?.() ?? (await getPersonalEntityId());
+  const projects = createProjectsStore(client, getProjectEntityId);
   const documents = createDocumentsStore(client);
   const templates = createTemplatesStore(client);
 
@@ -150,7 +150,7 @@ export function createScreenwriter(config: ScreenwriterConfig): Screenwriter {
     offline,
     createAi: (documentId, options) =>
       createAiFlow(client, documentId, options),
-    createApiKeys: () => createApiKeysFlow(client, getPersonalWorkspaceId),
+    createApiKeys: () => createApiKeysFlow(client, getPersonalEntityId),
     stores: { auth: authStore.store, projects, documents, templates },
 
     openDocumentSession(documentId, options) {

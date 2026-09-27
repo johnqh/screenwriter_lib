@@ -19,8 +19,8 @@ export interface ProjectsState {
 export type ProjectsClient = Pick<ScreenwriterClient, "listProjects" | "createProject" | "trashProject" | "restoreProject">;
 export type ProjectsStore = StoreApi<ProjectsState>;
 
-/** Projects of the personal workspace. `getWorkspaceId` resolves the workspace (from `me`). */
-export function createProjectsStore(client: ProjectsClient, getWorkspaceId: () => Promise<string>): ProjectsStore {
+/** Projects of the personal workspace. `getEntityId` resolves the workspace (from `me`). */
+export function createProjectsStore(client: ProjectsClient, getEntityId: () => Promise<string>): ProjectsStore {
   const store: ProjectsStore = createStore<ProjectsState>((set, get) => {
     const run = async (fn: () => Promise<void>) => {
       set({ loading: true, error: null });
@@ -40,13 +40,13 @@ export function createProjectsStore(client: ProjectsClient, getWorkspaceId: () =
       load: opts =>
         run(async () => {
           const trashed = opts?.trashed ?? false;
-          const page = await client.listProjects(await getWorkspaceId(), { trashed });
+          const page = await client.listProjects(await getEntityId(), { trashed });
           set({ items: page.items, showingTrash: trashed });
         }),
       async create(input) {
         let created: ProjectSummary | null = null;
         await run(async () => {
-          created = await client.createProject(await getWorkspaceId(), input);
+          created = await client.createProject(await getEntityId(), input);
           if (!get().showingTrash) set({ items: [created, ...get().items] });
         });
         return created;

@@ -44,8 +44,8 @@ export interface ApiKeysFlow {
   getState(): ApiKeysState;
   subscribe(listener: () => void): () => void;
   refresh(): Promise<void>;
-  /** Creates a key in the caller's workspace (`workspaceId` is added by the flow). Resolves true on success. */
-  create(input: Omit<ApiKeyCreateRequest, "workspaceId">): Promise<boolean>;
+  /** Creates a key in the caller's personal entity (`entityId` is added by the flow). Resolves true on success. */
+  create(input: Omit<ApiKeyCreateRequest, "entityId">): Promise<boolean>;
   /** Drops the secret from memory. */
   dismissReveal(): void;
   revoke(id: string): Promise<boolean>;
@@ -54,7 +54,7 @@ export interface ApiKeysFlow {
 }
 
 /** Personal API keys: list, create (one-time secret), revoke. */
-export function createApiKeysFlow(client: ApiKeysFlowClient, getWorkspaceId: () => Promise<string>): ApiKeysFlow {
+export function createApiKeysFlow(client: ApiKeysFlowClient, getEntityId: () => Promise<string>): ApiKeysFlow {
   let state: ApiKeysState = { keys: [], loaded: false, loading: false, creating: false, revoking: [], revealed: null, error: null };
   const listeners = new Set<() => void>();
   let disposed = false;
@@ -87,7 +87,7 @@ export function createApiKeysFlow(client: ApiKeysFlowClient, getWorkspaceId: () 
       if (state.creating) return false;
       set({ creating: true, error: null });
       try {
-        const created = await client.createApiKey({ ...input, workspaceId: await getWorkspaceId() });
+        const created = await client.createApiKey({ ...input, entityId: await getEntityId() });
         set({ creating: false, revealed: created });
         await refresh();
         return true;
