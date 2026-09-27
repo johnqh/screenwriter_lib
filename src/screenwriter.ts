@@ -8,11 +8,27 @@ import {
 import type { AuthPort } from "./ports/auth";
 import type { OfflineDocStore } from "./ports/offline";
 import { createAuthStore, type AuthStore } from "./stores/auth-store";
-import { createDocumentsStore, type DocumentsStore } from "./stores/documents-store";
-import { createProjectsStore, type ProjectsStore } from "./stores/projects-store";
-import { createTemplatesStore, type TemplatesStore } from "./stores/templates-store";
-import { colorForUid, openDocumentSession, type OpenSessionOptions } from "./session/document-session";
-import { createImportExportFlow, type ImportExportFlow } from "./flows/import-export";
+import {
+  createDocumentsStore,
+  type DocumentsStore,
+} from "./stores/documents-store";
+import {
+  createProjectsStore,
+  type ProjectsStore,
+} from "./stores/projects-store";
+import {
+  createTemplatesStore,
+  type TemplatesStore,
+} from "./stores/templates-store";
+import {
+  colorForUid,
+  openDocumentSession,
+  type OpenSessionOptions,
+} from "./session/document-session";
+import {
+  createImportExportFlow,
+  type ImportExportFlow,
+} from "./flows/import-export";
 import { createAiFlow, type AiFlow, type AiFlowOptions } from "./flows/ai";
 import { createApiKeysFlow, type ApiKeysFlow } from "./flows/api-keys";
 import type { DocumentSession } from "./session/types";
@@ -28,6 +44,8 @@ export interface ScreenwriterConfig {
   sync?: Partial<Omit<SyncClientOptions, "url" | "getToken">>;
   /** Defaults for `openDocumentSession`. */
   session?: OpenSessionOptions;
+  /** Current selected workspace id for app project CRUD; omitted by integrations that remain personal-only. */
+  getSelectedWorkspaceId?: () => string | null;
 }
 
 export interface Screenwriter {
@@ -51,7 +69,10 @@ export interface Screenwriter {
    * Open a document. One live session per document: concurrent opens share it (reference counted), and the
    * session really closes when every holder has called `close()`. Call `close()` once per open.
    */
-  openDocumentSession(documentId: string, options?: OpenSessionOptions): Promise<DocumentSession>;
+  openDocumentSession(
+    documentId: string,
+    options?: OpenSessionOptions,
+  ): Promise<DocumentSession>;
   /** Stop sync and detach listeners. */
   dispose(): void;
 }
@@ -59,21 +80,32 @@ export interface Screenwriter {
 /** Wires the injected ports into the client, sync client, stores and session factory. */
 export function createScreenwriter(config: ScreenwriterConfig): Screenwriter {
   const { network, baseUrl, auth, offline } = config;
-  const client = new ScreenwriterClient({ network, baseUrl, getToken: f => auth.getToken(f) });
-  const sync = new SyncClient({ ...config.sync, url: client.syncUrl(), getToken: f => auth.getToken(f) });
+  const client = new ScreenwriterClient({
+    network,
+    baseUrl,
+    getToken: (f) => auth.getToken(f),
+    getSelectedWorkspaceId: config.getSelectedWorkspaceId,
+  });
+  const sync = new SyncClient({
+    ...config.sync,
+    url: client.syncUrl(),
+    getToken: (f) => auth.getToken(f),
+  });
 
   const authStore = createAuthStore(auth, client);
-  const getWorkspaceId = async () => {
+  const getPersonalWorkspaceId = async () => {
     const me = authStore.store.getState().me ?? (await client.me());
     return me.personalWorkspaceId;
   };
-  const projects = createProjectsStore(client, getWorkspaceId);
+  const getProjectWorkspaceId = async () =>
+    config.getSelectedWorkspaceId?.() ?? (await getPersonalWorkspaceId());
+  const projects = createProjectsStore(client, getProjectWorkspaceId);
   const documents = createDocumentsStore(client);
   const templates = createTemplatesStore(client);
 
   // A different user (or none) means everything cached belongs to someone else.
   let lastUid = auth.currentUser?.uid ?? null;
-  const offAuth = auth.onChange(user => {
+  const offAuth = auth.onChange((user) => {
     const uid = user?.uid ?? null;
     if (uid === lastUid) return;
     lastUid = uid;
@@ -86,17 +118,25 @@ export function createScreenwriter(config: ScreenwriterConfig): Screenwriter {
   const getActor = (): Actor => {
     const u = auth.currentUser;
     if (!u) throw new Error("Sign in before opening a document");
-    return { userId: u.uid, displayName: u.displayName ?? u.email ?? u.uid, color: colorForUid(u.uid), kind: "human" };
+    return {
+      userId: u.uid,
+      displayName: u.displayName ?? u.email ?? u.uid,
+      color: colorForUid(u.uid),
+      kind: "human",
+    };
   };
 
-  const open = new Map<string, { promise: Promise<DocumentSession>; refs: number }>();
+  const open = new Map<
+    string,
+    { promise: Promise<DocumentSession>; refs: number }
+  >();
   const closing = new Map<string, Promise<void>>();
 
   const importExport = createImportExportFlow(client, {
     newDocumentId: () => newId("doc", cryptoIdSource),
     onImported: (pid, doc) => documents.getState().upsert(pid, doc),
     // exporting reads the server's copy: let this device's open session push its edits first
-    beforeExport: async id => {
+    beforeExport: async (id) => {
       const entry = open.get(id);
       if (entry) await (await entry.promise).settle();
     },
@@ -108,16 +148,22 @@ export function createScreenwriter(config: ScreenwriterConfig): Screenwriter {
     importExport,
     auth,
     offline,
-    createAi: (documentId, options) => createAiFlow(client, documentId, options),
-    createApiKeys: () => createApiKeysFlow(client, getWorkspaceId),
+    createAi: (documentId, options) =>
+      createAiFlow(client, documentId, options),
+    createApiKeys: () => createApiKeysFlow(client, getPersonalWorkspaceId),
     stores: { auth: authStore.store, projects, documents, templates },
 
     openDocumentSession(documentId, options) {
       let entry = open.get(documentId);
       if (!entry) {
         // A previous session of this document may still be closing: let it finish first.
-        const promise = (closing.get(documentId) ?? Promise.resolve()).then(() =>
-          openDocumentSession({ client, sync, offline, getActor }, documentId, { ...config.session, ...options })
+        const promise = (closing.get(documentId) ?? Promise.resolve()).then(
+          () =>
+            openDocumentSession(
+              { client, sync, offline, getActor },
+              documentId,
+              { ...config.session, ...options },
+            ),
         );
         entry = { promise, refs: 0 };
         open.set(documentId, entry);
@@ -127,7 +173,7 @@ export function createScreenwriter(config: ScreenwriterConfig): Screenwriter {
       }
       const e = entry;
       e.refs++;
-      return e.promise.then(session => {
+      return e.promise.then((session) => {
         let released = false;
         // Same session for every holder; only `close` differs (release one reference).
         return Object.create(session, {
