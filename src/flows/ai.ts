@@ -39,6 +39,7 @@ const MESSAGES: Record<string, string> = {
   AI_CONTENT_REFUSED: "The AI declined to work on this text.",
   AI_EXCLUDED_DOCUMENT: "AI is turned off for this script.",
   AI_DISABLED_FOR_WORKSPACE: "AI is turned off for this workspace.",
+  SCENE_SUMMARIES_MISSING: "This scene cannot be reviewed on its own yet: a scene before it has no summary. Review the complete script first.",
   SCOPE_TOO_LARGE: "That is too much to polish at once. Pick a smaller part of the script.",
   INTERRUPTED: "The AI job was interrupted. Please run it again.",
   SUGGESTION_UNAVAILABLE: "These suggestions can no longer be applied.",
@@ -66,10 +67,13 @@ export interface AiState {
   job: AiJob | null;
   /** True between pressing a button and the job being accepted by the API. */
   starting: boolean;
-  /** Most recent finished coverage report (also read back from the document's recent jobs after a reload). */
+  /**
+   * The report of the latest review, when it succeeded (also read back from the document's recent jobs after a
+   * reload). Null while a new review runs and after one that failed: an older report is never shown in its place.
+   */
   report: CoverageReport | null;
   reportCreatedAt: string | null;
-  /** The polish suggestion set being reviewed (also read back after a reload). */
+  /** The polish suggestion set being reviewed (also read back after a reload). Cleared when a new polish starts. */
   suggestionSet: SuggestionSet | null;
   /** A polish run that finished with nothing worth changing. */
   polishFoundNothing: boolean;
@@ -84,7 +88,11 @@ export interface AiFlow {
   subscribe(listener: () => void): () => void;
   /** Load status, the last report and the pending suggestion set. Safe to call again. */
   refresh(): Promise<void>;
-  startReview(options?: AiJobCreateRequest["options"]): Promise<void>;
+  /**
+   * Review the complete script, or with `scope` `{ sceneIds: [id], storySoFar: true }` one scene in the story so
+   * far (refused with `SCENE_SUMMARIES_MISSING` while a scene before it has no summary).
+   */
+  startReview(options?: AiJobCreateRequest["options"], scope?: AiScope): Promise<void>;
   /** Polish dialogue in the given scope (max 8 scenes). */
   startPolish(scope: AiScope, options?: AiJobCreateRequest["options"]): Promise<void>;
   cancel(): Promise<void>;
@@ -171,11 +179,25 @@ export function createAiFlow(client: AiFlowClient, documentId: string, options: 
     }, pollMs);
   }
 
+  /**
+   * What an earlier run left on screen goes when a new run of the same kind starts, so the writer never reads old
+   * notes as if they were about the script as it is now: not while the new run is working, and not when it fails.
+   * Undecided suggestions of the old set are rejected on the server too, or a reload would bring them back.
+   */
+  async function clearPrevious(task: AiJobCreateRequest["task"]) {
+    if (task === "coverage") return set({ report: null, reportCreatedAt: null });
+    const old = state.suggestionSet;
+    set({ suggestionSet: null, staleSuggestionIds: [], polishFoundNothing: false });
+    if (old?.suggestions.some(x => x.status === "pending")) await client.rejectSuggestions(old.id).catch(() => undefined);
+  }
+
   async function start(body: AiJobCreateRequest) {
     if (state.starting || isActive(state.job)) return;
     set({ starting: true, error: null, polishFoundNothing: false, staleSuggestionIds: [] });
     try {
       const { jobId } = await client.startAiJob(documentId, body);
+      // Only now: a run the API refused (no consent yet, another job running) has replaced nothing.
+      await clearPrevious(body.task);
       const job = await client.getAiJob(jobId);
       set({ job, starting: false });
       if (isActive(job)) schedule(jobId);
@@ -209,8 +231,10 @@ export function createAiFlow(client: AiFlowClient, documentId: string, options: 
         client.listSuggestionSets(documentId).catch(() => ({ items: [] })),
       ]);
       const patch: Partial<AiState> = { status, loaded: true };
-      const lastReport = jobs.items.find(j => j.task === "coverage" && j.status === "succeeded" && j.result?.kind === "report");
-      if (lastReport?.result?.kind === "report" && !state.report) {
+      // The LATEST review, and only if it succeeded: after a review that failed or was cancelled, an older report
+      // would read as the answer to it.
+      const lastReport = jobs.items.find(j => j.task === "coverage" && !isActive(j));
+      if (lastReport?.status === "succeeded" && lastReport.result?.kind === "report" && !state.report && !jobs.items.some(j => j.task === "coverage" && isActive(j))) {
         patch.report = lastReport.result.report;
         patch.reportCreatedAt = lastReport.finishedAt ?? lastReport.createdAt;
       }
@@ -224,7 +248,7 @@ export function createAiFlow(client: AiFlowClient, documentId: string, options: 
       if (pending && !state.suggestionSet) await loadSet(pending.id).catch(() => undefined);
     },
 
-    startReview: options => start({ task: "coverage", ...(options ? { options } : {}) }),
+    startReview: (options, scope) => start({ task: "coverage", ...(scope ? { scope } : {}), ...(options ? { options } : {}) }),
     startPolish: (scope, options) => start({ task: "polish.dialogue", scope, ...(options ? { options } : {}) }),
 
     async cancel() {

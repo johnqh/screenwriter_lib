@@ -76,4 +76,110 @@ describe("ai flow", () => {
     expect(flow.getState().error?.message).toMatch(/already running/i);
     expect(describeAiError("RATE_LIMITED").message).not.toMatch(/RATE_LIMITED/);
   });
+
+  describe("a new run clears what the last one left", () => {
+    const report = (summary: string) => ({ kind: "report", report: { summary, strengths: [], weaknesses: [], notesByScene: [] } }) as unknown as NonNullable<AiJob["result"]>;
+    const job = (id: string, status: AiJob["status"], result?: AiJob["result"], task = "coverage") =>
+      ({ id, documentId: "doc_1", task, status, result, createdAt: "2026-09-27T10:00:00Z", finishedAt: "2026-09-27T10:01:00Z" }) as AiJob;
+    const wait = async (until: () => boolean) => {
+      for (let i = 0; i < 100 && !until(); i++) await new Promise(r => setTimeout(r, 10));
+    };
+
+    it("the old report goes when a new review starts, and stays gone when that review fails", async () => {
+      const c = fake({ statuses: ["running"] });
+      c.listAiJobs = async () => ({ items: [job("job_0", "succeeded", report("old"))] });
+      let polls = 0;
+      c.getAiJob = async () => (polls++ < 2 ? job("job_1", "running") : ({ ...job("job_1", "failed"), error: { code: "AI_GENERATION_FAILED", message: "cut off" } } as AiJob));
+      const flow = createAiFlow(c, "doc_1", { pollMs: 5 });
+      await flow.refresh();
+      expect(flow.getState().report?.summary).toBe("old");
+      await flow.startReview();
+      expect(flow.getState().report).toBeNull(); // while it runs
+      expect(flow.getState().reportCreatedAt).toBeNull();
+      await wait(() => !!flow.getState().error);
+      expect(flow.getState().error?.code).toBe("AI_GENERATION_FAILED");
+      expect(flow.getState().report).toBeNull(); // and after it failed
+      flow.dispose();
+    });
+
+    it("a new review replaces the old report with its own", async () => {
+      const c = fake({ statuses: ["running"] });
+      c.listAiJobs = async () => ({ items: [job("job_0", "succeeded", report("old"))] });
+      let polls = 0;
+      c.getAiJob = async () => (polls++ < 1 ? job("job_1", "running") : job("job_1", "succeeded", report("new")));
+      const flow = createAiFlow(c, "doc_1", { pollMs: 5 });
+      await flow.refresh();
+      await flow.startReview();
+      await wait(() => !!flow.getState().report);
+      expect(flow.getState().report?.summary).toBe("new");
+      flow.dispose();
+    });
+
+    it("a review the API refuses to start replaces nothing", async () => {
+      const c = fake({ statuses: ["running"] });
+      c.listAiJobs = async () => ({ items: [job("job_0", "succeeded", report("old"))] });
+      c.startAiJob = async () => {
+        throw new ApiError("x", "AI_CONSENT_REQUIRED", 403);
+      };
+      const flow = createAiFlow(c, "doc_1");
+      await flow.refresh();
+      await flow.startReview();
+      expect(flow.getState().report?.summary).toBe("old");
+    });
+
+    it("after a reload: the latest review's report only if that review succeeded", async () => {
+      const failedLast = fake({ statuses: ["running"] });
+      failedLast.listAiJobs = async () => ({ items: [job("job_2", "failed"), job("job_p", "succeeded", undefined, "polish.dialogue"), job("job_0", "succeeded", report("old"))] });
+      const a = createAiFlow(failedLast, "doc_1");
+      await a.refresh();
+      expect(a.getState().report).toBeNull();
+
+      const succeededLast = fake({ statuses: ["running"] });
+      succeededLast.listAiJobs = async () => ({ items: [job("job_p", "failed", undefined, "polish.dialogue"), job("job_2", "succeeded", report("latest")), job("job_0", "succeeded", report("old"))] });
+      const b = createAiFlow(succeededLast, "doc_1");
+      await b.refresh();
+      expect(b.getState().report?.summary).toBe("latest");
+
+      const running = fake({ statuses: ["running"] });
+      running.listAiJobs = async () => ({ items: [job("job_3", "running"), job("job_0", "succeeded", report("old"))] });
+      running.getAiJob = async () => job("job_3", "running");
+      const d = createAiFlow(running, "doc_1", { pollMs: 5 });
+      await d.refresh();
+      expect(d.getState().report).toBeNull();
+      d.dispose();
+    });
+
+    it("a new polish drops the old suggestions and rejects the undecided ones, so a reload cannot bring them back", async () => {
+      const c = fake({ statuses: ["succeeded"], result: { kind: "suggestions", suggestionSetId: undefined as never, count: 0, droppedItems: 0 } });
+      c.listSuggestionSets = async () => ({ items: [set()] }) as never;
+      const rejected: string[] = [];
+      c.rejectSuggestions = async id => {
+        rejected.push(id);
+        return set({ status: "rejected" });
+      };
+      const flow = createAiFlow(c, "doc_1", { pollMs: 5 });
+      await flow.refresh();
+      expect(flow.getState().suggestionSet?.id).toBe("sset_1");
+      await flow.startPolish({ sceneIds: ["sc_1"] });
+      expect(rejected).toEqual(["sset_1"]);
+      expect(flow.getState().suggestionSet).toBeNull();
+      expect(flow.getState().polishFoundNothing).toBe(true);
+      // a review does not touch suggestions, a polish does not touch the report
+      flow.dispose();
+    });
+  });
+
+  it("a review of one scene sends its scope; a complete review sends none", async () => {
+    const c = fake({ statuses: ["succeeded"] });
+    const sent: unknown[] = [];
+    c.startAiJob = async (_did, body) => {
+      sent.push(body);
+      return { jobId: "job_1", status: "queued" };
+    };
+    const flow = createAiFlow(c, "doc_1");
+    await flow.startReview(undefined, { sceneIds: ["sc_3"], storySoFar: true });
+    await flow.startReview();
+    expect(sent).toEqual([{ task: "coverage", scope: { sceneIds: ["sc_3"], storySoFar: true } }, { task: "coverage" }]);
+    expect(describeAiError("SCENE_SUMMARIES_MISSING").message).toMatch(/complete script first/);
+  });
 });
